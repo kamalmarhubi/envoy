@@ -26,7 +26,7 @@ envoy_extension_cc_test(
         "envoy.filters.http.header_mutation",
         "envoy.formatter.cel",
     ],
-    rbe_pool = "6gig",
+    rbe_pool = "linux_x64_small",
     deps = [
         "//source/common/formatter:formatter_extension_lib",
         "//source/extensions/filters/http/header_mutation:config",
@@ -46,13 +46,14 @@ envoy_extension_cc_test(
     name = "config_test",
     srcs = ["config_test.cc"],
     extension_names = ["envoy.filters.http.header_mutation"],
-    rbe_pool = "6gig",
+    rbe_pool = "linux_x64_small",
     deps = [
         "//source/common/formatter:formatter_extension_lib",
         "//source/extensions/filters/http/header_mutation:config",
         "//test/mocks/server:factory_context_mocks",
         "//test/mocks/server:instance_mocks",
         "//test/test_common:registry_lib",
+        "//test/test_common:status_utility_lib",
         "//test/test_common:utility_lib",
     ],
 )
@@ -62,7 +63,7 @@ envoy_extension_cc_test(
     size = "large",
     srcs = ["header_mutation_integration_test.cc"],
     extension_names = ["envoy.filters.http.header_mutation"],
-    rbe_pool = "6gig",
+    rbe_pool = "linux_x64_small",
     deps = [
         "//source/common/formatter:formatter_extension_lib",
         "//source/extensions/filters/http/header_mutation:config",
