@@ -7,7 +7,6 @@
 
 #include "envoy/extensions/filters/http/header_mutation/v3/header_mutation.pb.h"
 #include "envoy/http/query_params.h"
-#include "envoy/protobuf/message_validator.h"
 
 #include "source/common/common/logger.h"
 #include "source/common/formatter/substitution_formatter.h"
@@ -84,7 +83,8 @@ public:
   using HeaderMutations = Http::HeaderMutations;
 
   Mutations(const MutationsProto& config, Server::Configuration::ServerFactoryContext& context,
-            ProtobufMessage::ValidationVisitor& validation_visitor, absl::Status& creation_status);
+            absl::Status& creation_status,
+            const Formatter::CommandParserPtrVector& command_parsers = {});
 
   void mutateRequestHeaders(Http::RequestHeaderMap& headers, const Formatter::Context& context,
                             const StreamInfo::StreamInfo& stream_info) const;
@@ -108,8 +108,8 @@ class PerRouteHeaderMutation : public Router::RouteSpecificFilterConfig {
 public:
   PerRouteHeaderMutation(const PerRouteProtoConfig& config,
                          Server::Configuration::ServerFactoryContext& context,
-                         ProtobufMessage::ValidationVisitor& validation_visitor,
-                         absl::Status& creation_status);
+                         absl::Status& creation_status,
+                         const Formatter::CommandParserPtrVector& command_parsers = {});
 
   const Mutations& mutations() const { return mutations_; }
 
@@ -122,7 +122,8 @@ class HeaderMutationConfig {
 public:
   HeaderMutationConfig(const ProtoConfig& config,
                        Server::Configuration::ServerFactoryContext& context,
-                       absl::Status& creation_status);
+                       absl::Status& creation_status,
+                       const Formatter::CommandParserPtrVector& command_parsers = {});
 
   const Mutations& mutations() const { return mutations_; }
 

@@ -3,11 +3,9 @@
 #include <cstdint>
 #include <memory>
 
-#include "source/common/formatter/substitution_format_string.h"
 #include "source/common/http/header_map_impl.h"
 #include "source/common/http/utility.h"
 #include "source/common/runtime/runtime_features.h"
-#include "source/server/generic_factory_context.h"
 
 namespace Envoy {
 namespace Extensions {
@@ -55,15 +53,8 @@ void QueryParameterMutationAppend::mutateQueryParameter(
 
 Mutations::Mutations(const MutationsProto& config,
                      Server::Configuration::ServerFactoryContext& context,
-                     ProtobufMessage::ValidationVisitor& validation_visitor,
-                     absl::Status& creation_status) {
-  Server::GenericFactoryContextImpl generic_context(context, validation_visitor);
-  auto command_parsers_or_error =
-      Formatter::SubstitutionFormatStringUtils::parseFormatters(config.formatters(), generic_context);
-  SET_AND_RETURN_IF_NOT_OK(command_parsers_or_error.status(), creation_status);
-  Formatter::CommandParserPtrVector command_parsers =
-      std::move(command_parsers_or_error.value());
-
+                     absl::Status& creation_status,
+                     const Formatter::CommandParserPtrVector& command_parsers) {
   auto request_mutations_or_error =
       HeaderMutations::create(config.request_mutations(), context, command_parsers);
   SET_AND_RETURN_IF_NOT_OK(request_mutations_or_error.status(), creation_status);
@@ -158,13 +149,14 @@ void Mutations::mutateRequestTrailers(Http::RequestTrailerMap& trailers,
 
 PerRouteHeaderMutation::PerRouteHeaderMutation(
     const PerRouteProtoConfig& config, Server::Configuration::ServerFactoryContext& context,
-    ProtobufMessage::ValidationVisitor& validation_visitor, absl::Status& creation_status)
-    : mutations_(config.mutations(), context, validation_visitor, creation_status) {}
+    absl::Status& creation_status, const Formatter::CommandParserPtrVector& command_parsers)
+    : mutations_(config.mutations(), context, creation_status, command_parsers) {}
 
 HeaderMutationConfig::HeaderMutationConfig(const ProtoConfig& config,
                                            Server::Configuration::ServerFactoryContext& context,
-                                           absl::Status& creation_status)
-    : mutations_(config.mutations(), context, context.messageValidationVisitor(), creation_status),
+                                           absl::Status& creation_status,
+                                           const Formatter::CommandParserPtrVector& command_parsers)
+    : mutations_(config.mutations(), context, creation_status, command_parsers),
       most_specific_header_mutations_wins_(config.most_specific_header_mutations_wins()) {}
 
 void HeaderMutation::maybeInitializeRouteConfigs(Http::StreamFilterCallbacks* callbacks) {

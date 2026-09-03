@@ -166,6 +166,66 @@ TEST(FactoryTest, FactoryTest) {
   }
 }
 
+#if defined(USE_CEL_PARSER)
+
+TEST(FactoryTest, ConfiguredCelFormatterIsForwardedToAllMutationSites) {
+  const std::string config = R"EOF(
+  mutations:
+    request_mutations:
+    - append:
+        header:
+          key: "request-header"
+          value: "%CEL('old'.replace('old', 'new'))%"
+    response_mutations:
+    - append:
+        header:
+          key: "response-header"
+          value: "%CEL('old'.replace('old', 'new'))%"
+    request_trailers_mutations:
+    - append:
+        header:
+          key: "request-trailer"
+          value: "%CEL('old'.replace('old', 'new'))%"
+    response_trailers_mutations:
+    - append:
+        header:
+          key: "response-trailer"
+          value: "%CEL('old'.replace('old', 'new'))%"
+    query_parameter_mutations:
+    - append:
+        record:
+          key: "query"
+          value: "%CEL('old'.replace('old', 'new'))%"
+    formatters:
+    - name: envoy.formatter.cel
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.formatter.cel.v3.Cel
+        cel_config:
+          enable_string_functions: true
+  )EOF";
+
+  testing::NiceMock<Server::Configuration::MockFactoryContext> context;
+  ScopedThreadLocalServerContextSetter server_context_singleton_setter{
+      context.server_factory_context_};
+  auto* factory =
+      Registry::FactoryRegistry<Server::Configuration::NamedHttpFilterConfigFactory>::getFactory(
+          "envoy.filters.http.header_mutation");
+  ASSERT_NE(factory, nullptr);
+
+  ProtoConfig proto_config;
+  TestUtility::loadFromYaml(config, proto_config);
+  auto filter_factory = factory->createFilterFactoryFromProto(proto_config, "test", context);
+  ASSERT_TRUE(filter_factory.ok()) << filter_factory.status();
+
+  PerRouteProtoConfig per_route_proto_config;
+  TestUtility::loadFromYaml(config, per_route_proto_config);
+  auto route_config = factory->createRouteSpecificFilterConfig(
+      per_route_proto_config, context.server_factory_context_, context.messageValidationVisitor());
+  EXPECT_TRUE(route_config.ok()) << route_config.status();
+}
+
+#endif // USE_CEL_PARSER
+
 TEST(FactoryTest, UpstreamFactoryTest) {
   auto* factory =
       Registry::FactoryRegistry<Server::Configuration::UpstreamHttpFilterConfigFactory>::getFactory(
